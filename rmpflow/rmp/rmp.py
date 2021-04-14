@@ -143,3 +143,29 @@ class RMPLeaf(RMPNode):
         Compute natural form RMP given the state
         """
         self.f, self.M = self.RMP_func(self.x, self.x_dot)
+
+    def pullback(self):
+        """
+        Pullback at leaf node is just evaluating the RMP
+        """
+        if self.verbose:
+            print("{}: pullback".format(self.name))
+
+        self.eval_leaf()
+
+    def add_child(self):
+        print("A leaf node should not be able to add a child node")
+        pass
+
+    def update_params(self):
+        """
+        Updating any relevant parameters that this leaf node needs
+        """
+        pass
+
+    def update(self):
+        """
+        Updates to self
+        """
+        self.update_params()
+        self.pushforward()
