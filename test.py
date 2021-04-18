@@ -1,5 +1,8 @@
 import numpy as np
 
+from rmpflow.rmp.rmp import RMPRoot, RMPNode
+
+
 class BaseClass():
     """
     """
@@ -28,6 +31,16 @@ class DerivedClass(BaseClass):
 
         super().__init__(func1, func2)
 
+class TestDerivedClass(BaseClass):
+    def __init__(self, val):
+        self.val = val
+        super().__init__(None, None)
+
+def test_default_arg(urdf_path="", base_name="root"):
+    print(urdf_path)
+    print(base_name)
+    pass
+
 if __name__ == "__main__":
     import argparse
 
@@ -42,3 +55,7 @@ if __name__ == "__main__":
     dclass.test_func2(10)
 
     print("a is {}".format(dclass.a))
+
+    testdclass = TestDerivedClass(10)
+
+    root = test_default_arg("test")

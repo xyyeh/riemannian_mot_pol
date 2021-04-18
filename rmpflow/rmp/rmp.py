@@ -2,19 +2,17 @@
 
 import numpy as np
 
-
 class RMPNode:
     """
     A generic rmp node
     """
-
     def __init__(self, name, parent, psi, J, J_dot, verbose=False):
         self.name = name
         self.parent = parent
         self.children = []
 
         # connecting this node as its parent's child
-        if self.parent:
+        if self.parent is not None:
             self.parent.add_child(self)
 
         # mapping J and J_dot for the edge from parent to this node
@@ -91,7 +89,8 @@ class RMPRoot(RMPNode):
     """
 
     def __init__(self, name):
-        super().__init__(self, name, None, None, None, None)
+        # print("RMPRoot")
+        super().__init__(name, None, None, None, None)
 
     def set_root_state(self, x, x_dot):
         """
@@ -129,12 +128,14 @@ class RMPRoot(RMPNode):
         self.pushback()
         return self.resolve()
 
+
 class RMPLeaf(RMPNode):
     """
     A leaf node
     """
+
     def __init__(self, name, parent, parent_param, psi, J, J_dot, RMP_func):
-        super().__init__(self, name, parent, psi, J, J_dot)
+        super().__init__(name, parent, psi, J, J_dot)
         self.RMP_func = RMP_func
         self.parent_param = parent_param
 
