@@ -76,8 +76,8 @@ class RBDRMPNode(RMPNode):
             Jacobian taking in a numpy q array
             """
             update_joint_pos(q)
-            update_joint_vel(dq)
-            jac = rbd.Jacobian(self.robot.mb, self.robot.mb.bodies()[-1].name().decode("utf-8"))
+            rbd.forwardKinematics(self.robot.mb, self.robot.mbc)
+            jac = rbd.Jacobian(self.robot.mb, self.robot.mb.bodies()[-1].name())
             swapped_jac = e.MatrixXd(6, self.robot.mb.nrDof())
             jac.fullJacobian(self.robot.mb, jac.jacobian(self.robot.mb, self.robot.mbc), swapped_jac)
             J = self.SelMatrix*swapped_jac
@@ -87,8 +87,11 @@ class RBDRMPNode(RMPNode):
             """
             Jacobian dot taking in a numpy q and dq array
             """
-            update_joint_states(q)
-            jac = rbd.Jacobian(self.robot.mb, self.robot.mb.bodies()[-1].name().decode("utf-8"))
+            update_joint_pos(q)
+            update_joint_vel(dq)
+            rbd.forwardKinematics(self.robot.mb, self.robot.mbc)
+            rbd.forwardVelocity(self.robot.mb, self.robot.mbc)
+            jac = rbd.Jacobian(self.robot.mb, self.robot.mb.bodies()[-1].name())
             swapped_jac_dot = e.MatrixXd(6, self.robot.mb.nrDof())
             jac.fullJacobian(self.robot.mb, jac.jacobianDot(self.robot.mb, self.robot.mbc), swapped_jac_dot)
             J_dot = self.SelMatrix*swapped_jac_dot
@@ -234,7 +237,7 @@ def rmp_tree_from_urdf(urdf_path="", base_name="root"):
         parent_dict[link_names[i]] = link_names[i - 1]
 
     # construct RMP root
-    root = RMPRoot("root")
+    root = RMPRoot(base_name)
 
     # construct tree with link names
     qlen = len(link_names)
@@ -269,4 +272,4 @@ if __name__ == "__main__":
     robot = from_urdf_file(urdf_path)
 
     root = RMPRoot("root")
-    # leaf = RBDRMPNode("leaf", root, robot, base_name, seg_name)
+    leaf = RBDRMPNode("leaf", root, robot, base_name, seg_name)
