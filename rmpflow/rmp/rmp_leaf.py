@@ -109,7 +109,7 @@ class CollisionAvoidance(RMPLeaf):
         name,
         parent,
         parent_param,
-        c=np.zeros(2),
+        c=np.zeros(3),
         R=1,
         epsilon=0.2,
         alpha=1e-5,
@@ -131,14 +131,49 @@ class CollisionAvoidance(RMPLeaf):
             N = c.size
 
             # R is the radius of the obstacle point
-            psi = lambda y: np.array(norm(y-c)-R).reshape(-1,1)
-            J = lambda y: 1.0 / norm(y - c) * (y - c).transpose()
+            psi = lambda y: np.array(norm(y - c) - R).reshape(-1, 1)
+            J = lambda y: 1.0 / norm(y - c) * (y - c).T
             J_dot = lambda y, y_dot: np.dot(
                 y_dot.T,
-                (-1 / norm(y - c) ** 3 * np.dot((y - c), (y - c).transpose())
-                 + 1 / norm(y - c) * np.eye(N)))
+                (
+                    -1 / norm(y - c) ** 3 * np.dot((y - c), (y - c).T)
+                    + 1 / norm(y - c) * np.eye(N)
+                ),
+            )
 
             def RMP_func(x, x_dot):
                 # using D.3, x is d(x)
                 s = x
-                w = 
+                w = max(r_w - s, 0) / (s - R) if (s - R) >= 0 else 1e10
+                grad_w = (
+                    (((r_w - s) > 0) * -1 * (s - R) - max(r_w - s, 0.0)) / (s - R) ** 2
+                    if (s - R) >= 0
+                    else 0
+                )
+
+                # epsilon is the constant value when moving away from the obstacle
+                u = epsilon + (
+                    1.0 - np.exp(-(x_dot ** 2) / 2.0 / sigma ** 2) if x_dot < 0 else 0.0
+                )
+                g = w * u
+
+                grad_u = (
+                    np.exp(-(x_dot ** 2) / 2.0 / sigma ** 2) * x_dot / sigma ** 2
+                    if x_dot < 0
+                    else 0.0
+                )
+
+                grad_Phi = alpha * w * grad_w
+                xi = 0.5 * x_dot ** 2 * u * grad_w
+
+                # upper-case xi calculation is included here
+                M = g + 0.5 * x_dot * w * grad_u
+                M = np.minimum(np.maximum(M, -1e5), 1e5)
+
+                Bx_dot = eta * g * x_dot
+
+                f = np.minimum(np.maximum(-grad_Phi - xi - Bx_dot, -1e10), 1e10)
+
+                return (f, M)
+
+            super().__init__(name, parent, parent_param, psi, J, J_dot, RMP_func)
