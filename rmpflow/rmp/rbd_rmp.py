@@ -68,7 +68,7 @@ class RBDRMPNode(RMPNode):
             sv = self.robot.mbc.bodyPosW[-1]
             p = sv.translation()
             r = R.from_matrix(np.array(sv.rotation().transpose())) 
-            eul = r.as_euler('zyx', degrees=False)
+            eul = r.as_euler('zyx', degrees=False) # as rz, ry and rz angles in order
             return np.array([[p.x(), p.y(), p.z(), eul[0], eul[1], eul[2]]]).transpose()
 
         def J(q):
@@ -180,31 +180,31 @@ class PositionProjection(ProjectionNode):
 
 class RotationProjection(ProjectionNode):
     """
-    Convenience method to pass rotation (Euler ZYX) from RBDRMPNode state
+    Convenience method to pass rotation (Euler ZYX in radians) from RBDRMPNode state
     """
 
     def __init__(self, name, parent):
         super().__init__(name, parent, np.array([0, 0, 0, 1, 1, 1]))
 
 
-def rotation_mat_to_euler(rotation):
-    """
-    Converts rotation matrix to euler zyx
-    @param rotation     Rotation matrix
-    """
-    sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-    singular = sy < 1e-6
+# def rotation_mat_to_euler(rotation):
+#     """
+#     Converts rotation matrix to euler zyx
+#     @param rotation     Rotation matrix
+#     """
+#     sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+#     singular = sy < 1e-6
 
-    if not singular:
-        x = math.atan2(R[2, 1], R[2, 2])
-        y = math.atan2(-R[2, 0], sy)
-        z = math.atan2(R[1, 0], R[0, 0])
-    else:
-        x = math.atan2(-R[1, 2], R[1, 1])
-        y = math.atan2(-R[2, 0], sy)
-        z = 0
+#     if not singular:
+#         x = math.atan2(R[2, 1], R[2, 2])
+#         y = math.atan2(-R[2, 0], sy)
+#         z = math.atan2(R[1, 0], R[0, 0])
+#     else:
+#         x = math.atan2(-R[1, 2], R[1, 1])
+#         y = math.atan2(-R[2, 0], sy)
+#         z = 0
 
-    return x, y, z
+#     return x, y, z
 
 
 def rmp_tree_from_urdf(urdf_path="", base_name="root"):
