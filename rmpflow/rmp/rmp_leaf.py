@@ -2,8 +2,9 @@ from rmpflow.rmp.rmp import RMPNode, RMPRoot, RMPLeaf
 import numpy as np
 from numpy.linalg import norm, inv
 from scipy.spatial.transform import Rotation as Rot
-import jax.numpy as jnp
-from jax import grad, jit, vmap, jacfwd
+
+# from jax import grad, jit, vmap, jacfwd
+# import jax.numpy as jnp
 
 
 class GoalAttractorUni(RMPLeaf):

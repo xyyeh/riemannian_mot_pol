@@ -2,11 +2,13 @@
 
 import numpy as np
 
+
 class RMPNode:
     """
     A generic rmp node
     """
-    def __init__(self, name, parent, psi, J, J_dot, verbose=False):
+
+    def __init__(self, name, parent, psi, J, J_dot, verbose=True):
         self.name = name
         self.parent = parent
         self.children = []
@@ -48,10 +50,15 @@ class RMPNode:
 
         if self.psi is not None and self.J is not None:
             self.x = self.psi(self.parent.x)
-            self.x_dot = np.dot(self.J(self.parent.x), self.x_dot)
+            self.x_dot = np.dot(self.J(self.parent.x), self.parent.x_dot)
+        else:
+            print("psi and J are None")
+
+        if self.verbose:
+            print("{}: x = {}, dx = {}".format(self.name, self.x, self.x_dot))
 
         # recursion
-        [child.pushforward() for child in self.children]
+        # [child.pushforward() for child in self.children]
 
     def pullback(self):
         """
@@ -99,15 +106,15 @@ class RMPRoot(RMPNode):
         self.x = x
         self.x_dot = x_dot
 
-    # def pushforward(self):
-    #     """
-    #     Apply pushforward recursively
-    #     """
-    #     if self.verbose:
-    #         print("{}: pushforward".format(self.name))
+    def pushforward(self):
+        """
+        Apply pushforward recursively
+        """
+        if self.verbose:
+            print("{}: pushforward".format(self.name))
 
-    #     # recursion
-    #     [child.pushforward() for child in self.children]
+        # recursion
+        [child.pushforward() for child in self.children]
 
     def resolve(self):
         """

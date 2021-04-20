@@ -11,10 +11,13 @@ from rbdyn.parsers import *
 
 import math
 
+
 class RBDRMPNode(RMPNode):
     """
-    Builds a new rmb node, psi is forward kinematics
+    Builds a new RMP node, map is the forward kinematics from the base to end_link.
+    offset is in the local frame of the end_link's joint frame
     """
+
     def __init__(
         self,
         name,
@@ -22,82 +25,120 @@ class RBDRMPNode(RMPNode):
         robot,
         base_link,
         end_link,
-        urdf_path="",
         offset=np.zeros((3, 1)),
     ):
         # robot structure
         self.robot = robot
 
         # selection matrix to swap coordinates
-        self.SelMatrix = e.MatrixXd.Zero(6,6)
-        self.SelMatrix.coeff(0,3,1)
-        self.SelMatrix.coeff(1,4,1)
-        self.SelMatrix.coeff(2,5,1)
-        self.SelMatrix.coeff(3,0,1)
-        self.SelMatrix.coeff(4,1,1)
-        self.SelMatrix.coeff(5,2,1)
+        sel_mat = e.MatrixXd.Zero(6, 6)
+        sel_mat.coeff(0, 3, 1)
+        sel_mat.coeff(1, 4, 1)
+        sel_mat.coeff(2, 5, 1)
+        sel_mat.coeff(3, 0, 1)
+        sel_mat.coeff(4, 1, 1)
+        sel_mat.coeff(5, 2, 1)
+        self.SelMatrix = sel_mat
 
         # forward kinematics
-        def update_joint_pos(q):
+        def _update_joint_pos(q):
+            a = np.ones(7)
+
+            for i in range(len(q)):
+                a[i] = q[i]
+
             self.robot.mbc.q = [
                 [],
-                [q[0]],
-                [q[1]],
-                [q[2]],
-                [q[3]],
-                [q[4]],
-                [q[5]],
-                [q[6]],
+                [a[0]],
+                [a[1]],
+                [a[2]],
+                [a[3]],
+                [a[4]],
+                [a[5]],
+                [a[6]],
             ]
 
-        def update_joint_vel(dq):
+        def _update_joint_vel(dq):
+            a = np.ones(7)
+
+            for i in range(len(dq)):
+                a[i] = dq[i]
+
             self.robot.mbc.alpha = [
                 [],
-                [dq[0]],
-                [dq[1]],
-                [dq[2]],
-                [dq[3]],
-                [dq[4]],
-                [dq[5]],
-                [dq[6]],
+                [a[0]],
+                [a[1]],
+                [a[2]],
+                [a[3]],
+                [a[4]],
+                [a[5]],
+                [a[6]],
             ]
 
+        def _body_id_from_name(name):
+            """
+            Gets the body Id from the body name
+            @param name The name of the body
+            @param bodies The set of bodies provided by the multibody data structure
+            @return Id of the body, -1 if not found
+            """
+            for bi, b in enumerate(self.robot.mb.bodies()):
+                if b.name().decode("utf-8") == name:
+                    return bi
+            return -1
+
         def psi(q):
-            update_joint_pos(q)
+            _update_joint_pos(q)
             rbd.forwardKinematics(self.robot.mb, self.robot.mbc)
-            sv = self.robot.mbc.bodyPosW[-1]
+            sv = self.robot.mbc.bodyPosW[_body_id_from_name(end_link)]
+            r = R.from_matrix(np.array(sv.rotation().transpose()))
             p = sv.translation()
-            r = R.from_matrix(np.array(sv.rotation().transpose())) 
-            eul = r.as_euler('zyx', degrees=False) # as rz, ry and rz angles in order
-            return np.array([[p.x(), p.y(), p.z(), eul[0], eul[1], eul[2]]]).transpose()
+            ofs = r.as_matrix().dot(offset.reshape(3, 1)).flatten()
+            eul = r.as_euler("zyx", degrees=False)  # as rz, ry and rx angles in order
+            return np.array(
+                [
+                    p.x() + ofs[0],
+                    p.y() + ofs[1],
+                    p.z() + ofs[2],
+                    eul[0],
+                    eul[1],
+                    eul[2],
+                ]
+            )
 
         def J(q):
             """
             Jacobian taking in a numpy q array
             """
-            update_joint_pos(q)
+            _update_joint_pos(q)
             rbd.forwardKinematics(self.robot.mb, self.robot.mbc)
-            jac = rbd.Jacobian(self.robot.mb, self.robot.mb.bodies()[-1].name())
+            jac = rbd.Jacobian(self.robot.mb, end_link.encode("utf-8"))
             swapped_jac = e.MatrixXd(6, self.robot.mb.nrDof())
-            jac.fullJacobian(self.robot.mb, jac.jacobian(self.robot.mb, self.robot.mbc), swapped_jac)
-            J = self.SelMatrix*swapped_jac
-            return np.array(J)
+            jac.fullJacobian(
+                self.robot.mb, jac.jacobian(self.robot.mb, self.robot.mbc), swapped_jac
+            )
+            J = np.array(self.SelMatrix * swapped_jac)
+            return J[:, range(len(q))]
 
         def J_dot(q, dq):
             """
             Jacobian dot taking in a numpy q and dq array
             """
-            update_joint_pos(q)
-            update_joint_vel(dq)
+            _update_joint_pos(q)
+            _update_joint_vel(dq)
             rbd.forwardKinematics(self.robot.mb, self.robot.mbc)
             rbd.forwardVelocity(self.robot.mb, self.robot.mbc)
-            jac = rbd.Jacobian(self.robot.mb, self.robot.mb.bodies()[-1].name())
+            jac = rbd.Jacobian(self.robot.mb, end_link.encode("utf-8"))
             swapped_jac_dot = e.MatrixXd(6, self.robot.mb.nrDof())
-            jac.fullJacobian(self.robot.mb, jac.jacobianDot(self.robot.mb, self.robot.mbc), swapped_jac_dot)
-            J_dot = self.SelMatrix*swapped_jac_dot
-            return np.array(J_dot)
+            jac.fullJacobian(
+                self.robot.mb,
+                jac.jacobianDot(self.robot.mb, self.robot.mbc),
+                swapped_jac_dot,
+            )
+            J_dot = np.array(self.SelMatrix * swapped_jac_dot)
+            return J_dot[:, range(len(q))]
 
-        super().__init__(name, parent, psi, J, J_dot, verbose=False)
+        super().__init__(name, parent, psi, J, J_dot, verbose=True)
 
     def update_kinematics(self, q, dq):
         """
@@ -154,6 +195,7 @@ class ProjectionNode(RMPNode):
     """
 
     def __init__(self, name, parent, param_map):
+        self.param_map = param_map
         one_map = param_map.astype("int32")
         mat = np.zeros((np.sum(one_map), one_map.size), dtype="float64")
 
@@ -162,6 +204,8 @@ class ProjectionNode(RMPNode):
             if one_map[i] == 1:
                 mat[i_mat][i] = 1
                 i_mat += 1
+
+        self.mat = mat
 
         psi = lambda y: np.dot(mat, y)
         J = lambda x: mat
@@ -187,6 +231,15 @@ class RotationProjection(ProjectionNode):
         super().__init__(name, parent, np.array([0, 0, 0, 1, 1, 1]))
 
 
+class FrameProjection(ProjectionNode):
+    """
+    Convenience method to pass rotation and orientation from RBDRMPNode state
+    """
+
+    def __init__(self, name, parent):
+        super().__init__(name, parent, np.array([1, 1, 1, 1, 1, 1]))
+
+
 # def rotation_mat_to_euler(rotation):
 #     """
 #     Converts rotation matrix to euler zyx
@@ -205,6 +258,18 @@ class RotationProjection(ProjectionNode):
 #         z = 0
 
 #     return x, y, z
+
+
+def rmp_tree_print(node, prefix="", last=True):
+    """
+    Prints the RMP tree
+    """
+    print(prefix, "`- " if last else "|- ", node.name, sep="")
+    prefix += "   " if last else "|  "
+    child_count = len(node.children)
+    for i, child in enumerate(node.children):
+        last = i == (child_count - 1)
+        rmp_tree_print(child, prefix, last)
 
 
 def rmp_tree_from_urdf(urdf_path="", base_name="root"):
@@ -262,14 +327,35 @@ def rmp_tree_from_urdf(urdf_path="", base_name="root"):
         # setup node
         proj_node = ProjectionNode("proj_" + seg_name, root, proj_vect)
         seg_node = RBDRMPNode(seg_name, proj_node, robot, base_name, seg_name)
-        leaf_dict[seg_node] = seg_node
+        leaf_dict[seg_name] = seg_node
 
-    return root, leaf_dict
+    return root, leaf_dict, robot
 
 
-if __name__ == "__main__":
-
-    robot = from_urdf_file(urdf_path)
-
-    root = RMPRoot("root")
-    leaf = RBDRMPNode("leaf", root, robot, base_name, seg_name)
+def node_array(
+    name,
+    parent,
+    robot,
+    h=0,
+    num=1,
+    link_dir=np.array([[0], [0], [1]]),
+    skip_h=0,
+    offset=np.zeros((3, 1)),
+):
+    """
+    Constructs RBDRMPNodes offsetted regularly from the origin of the local link frame along link_dir
+    """
+    assert num >= 1
+    unit_dir = link_dir / np.linalg.norm(link_dir)
+    spacing = (h - skip_h) / (num - 1) if num > 1 else 0
+    nodes = []
+    for i in range(num):
+        nodes.append(
+            RBDRMPNode(
+                name + str(i),
+                parent,
+                robot,
+                offset=unit_dir * spacing * i + offset,
+            )
+        )
+    return nodes
