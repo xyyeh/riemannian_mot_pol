@@ -58,7 +58,7 @@ class RMPNode:
             print("{}: x = {}, dx = {}".format(self.name, self.x, self.x_dot))
 
         # recursion
-        # [child.pushforward() for child in self.children]
+        [child.pushforward() for child in self.children]
 
     def pullback(self):
         """
@@ -132,7 +132,7 @@ class RMPRoot(RMPNode):
         """
         self.set_root_state(x, x_dot)
         self.pushforward()
-        self.pushback()
+        self.pullback()
         return self.resolve()
 
 

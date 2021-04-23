@@ -325,7 +325,7 @@ def rmp_tree_from_urdf(urdf_path="", base_name="root"):
         proj_dict[seg_name] = proj_vect
 
         # setup node
-        proj_node = ProjectionNode("proj_" + seg_name, root, proj_vect)
+        proj_node = ProjectionNode("proj_q_" + seg_name, root, proj_vect)
         seg_node = RBDRMPNode(seg_name, proj_node, robot, base_name, seg_name)
         leaf_dict[seg_name] = seg_node
 

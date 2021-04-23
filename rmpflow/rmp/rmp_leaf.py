@@ -25,15 +25,13 @@ class GoalAttractorUni(RMPLeaf):
         gain=1,
         tol=0.005,
     ):
-        if y_g.ndim == 1:
-            y_g = y_g.reshape(-1, 1)
-
         N = y_g.size
         psi = lambda y: (y - y_g)
         J = lambda y: np.eye(N)
         J_dot = lambda y, y_dot: np.zeros((N, N))
 
         def RMP_func(x, x_dot):
+            # x and x_dot refers to the error and error_dot
             x_norm = norm(x)
 
             # -ve gradient of eta-scaled softmax potential function (25)
@@ -50,7 +48,7 @@ class GoalAttractorUni(RMPLeaf):
             else:
                 grad_Phi = 0
             Bx_dot = eta * w * x_dot
-            grad_w = -beta * (w_u - w_l) / sigma ** 2 * x
+            grad_w = -gamma * (w_u - w_l) / sigma_gamma ** 2 * x
 
             # since gradient is simple, xi is hand-computed, M_stretch is a bit more complicated, we'll be using a differentiation library like AutoGrad
             x_dot_norm = norm(x_dot)
