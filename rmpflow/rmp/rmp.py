@@ -8,7 +8,7 @@ class RMPNode:
     A generic rmp node
     """
 
-    def __init__(self, name, parent, psi, J, J_dot, verbose=True):
+    def __init__(self, name, parent, psi, J, J_dot, verbose=False):
         self.name = name
         self.parent = parent
         self.children = []

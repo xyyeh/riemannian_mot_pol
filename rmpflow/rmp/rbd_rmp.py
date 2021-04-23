@@ -138,7 +138,7 @@ class RBDRMPNode(RMPNode):
             J_dot = np.array(self.SelMatrix * swapped_jac_dot)
             return J_dot[:, range(len(q))]
 
-        super().__init__(name, parent, psi, J, J_dot, verbose=True)
+        super().__init__(name, parent, psi, J, J_dot, verbose=False)
 
     def update_kinematics(self, q, dq):
         """
@@ -185,7 +185,7 @@ class RBDRMPNode(RMPNode):
         fd.computeC(self.robot.mb, self.robot.mbc)
         self.h = fd.C()
 
-        return M, Minv, h
+        return np.array(self.M), np.array(self.Minv), np.array(self.h)
 
 
 class ProjectionNode(RMPNode):

@@ -6,7 +6,6 @@ from scipy.spatial.transform import Rotation as Rot
 # from jax import grad, jit, vmap, jacfwd
 # import jax.numpy as jnp
 
-
 class GoalAttractorUni(RMPLeaf):
     """
     Goal attractor RMP leaf
@@ -39,7 +38,7 @@ class GoalAttractorUni(RMPLeaf):
 
             # functions in Appendix D's "Metric options"
             gamma = np.exp(-(x_norm ** 2) / 2 / (sigma_gamma ** 2))
-            w = (w_u - w_l) * sigma_gamma + w_l
+            w = (w_u - w_l) * gamma + w_l
 
             # metric options (27)
             G = np.eye(N) * w
@@ -50,7 +49,8 @@ class GoalAttractorUni(RMPLeaf):
             Bx_dot = eta * w * x_dot
             grad_w = -gamma * (w_u - w_l) / sigma_gamma ** 2 * x
 
-            # since gradient is simple, xi is hand-computed, M_stretch is a bit more complicated, we'll be using a differentiation library like AutoGrad
+            # since gradient is simple, xi is hand-computed
+            # M_stretch is a bit more complicated, we'll need to use a differentiation library like AutoGrad
             x_dot_norm = norm(x_dot)
             xi = -0.5 * (
                 x_dot_norm ** 2 * grad_w
@@ -59,7 +59,7 @@ class GoalAttractorUni(RMPLeaf):
 
             # Use G(x, dx) = M(x), since there is no dependence on velocity, so \Xi = 0
             M = G
-            f = -grad_Phi - Bx_dot - xi
+            f = - grad_Phi - Bx_dot - xi
 
             return (f, M)  # Natural form
 
