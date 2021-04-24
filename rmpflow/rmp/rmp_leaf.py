@@ -61,6 +61,8 @@ class GoalAttractorUni(RMPLeaf):
             M = G
             f = - grad_Phi - Bx_dot - xi
 
+            f = np.zeros_like(f)
+
             return (f, M)  # Natural form
 
         super().__init__(name, parent, None, psi, J, J_dot, RMP_func)

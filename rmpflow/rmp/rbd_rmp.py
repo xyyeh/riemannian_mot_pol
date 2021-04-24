@@ -138,7 +138,7 @@ class RBDRMPNode(RMPNode):
             J_dot = np.array(self.SelMatrix * swapped_jac_dot)
             return J_dot[:, range(len(q))]
 
-        super().__init__(name, parent, psi, J, J_dot, verbose=False)
+        super().__init__(name, parent, psi, J, J_dot, verbose=True)
 
     def update_kinematics(self, q, dq):
         """

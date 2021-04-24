@@ -8,7 +8,7 @@ class RMPNode:
     A generic rmp node
     """
 
-    def __init__(self, name, parent, psi, J, J_dot, verbose=False):
+    def __init__(self, name, parent, psi, J, J_dot, verbose=True):
         self.name = name
         self.parent = parent
         self.children = []
@@ -81,13 +81,18 @@ class RMPNode:
             M_i = child.M
 
             if child.f is not None and child.M is not None:
+                print("{} == {}".format(f_i, J_dot_i))
                 f += np.dot(
                     J_i.T, (f_i - np.dot(np.dot(M_i, J_dot_i), self.x_dot))
                 )  # 1-form
                 M += np.dot(np.dot(J_i.T, M_i), J_i)  # 2-form
+            else:
+                print("{} does not contribute".format(child.name))
 
         self.f = f
         self.M = M
+
+        print("{} - {}".format(self.name, self.f))
 
 
 class RMPRoot(RMPNode):
@@ -152,12 +157,14 @@ class RMPLeaf(RMPNode):
         """
         self.f, self.M = self.RMP_func(self.x, self.x_dot)
 
+        print("(f, M) = ({}, {})".format(self.f, self.M))
+
     def pullback(self):
         """
         Pullback at leaf node is just evaluating the RMP
         """
         if self.verbose:
-            print("{}: pullback".format(self.name))
+            print("{}: pullback (leaf)".format(self.name))
 
         self.eval_leaf()
 
