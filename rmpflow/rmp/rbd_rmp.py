@@ -94,15 +94,17 @@ class RBDRMPNode(RMPNode):
             r = R.from_matrix(np.array(sv.rotation().transpose()))
             p = sv.translation()
             ofs = r.as_matrix().dot(offset.reshape(3, 1)).flatten()
-            eul = r.as_euler("zyx", degrees=False)  # as rz, ry and rx angles in order
+            # eul = r.as_euler("zyx", degrees=False)  # as rz, ry and rx angles in order
+            quat = r.as_quat()
             return np.array(
                 [
                     p.x() + ofs[0],
                     p.y() + ofs[1],
                     p.z() + ofs[2],
-                    eul[0],
-                    eul[1],
-                    eul[2],
+                    quat[0],
+                    quat[1],
+                    quat[2],
+                    quat[3],
                 ]
             )
 
@@ -138,7 +140,7 @@ class RBDRMPNode(RMPNode):
             J_dot = np.array(self.SelMatrix * swapped_jac_dot)
             return J_dot[:, range(len(q))]
 
-        super().__init__(name, parent, psi, J, J_dot, verbose=True)
+        super().__init__(name, parent, psi, J, J_dot, verbose=False)
 
     def update_kinematics(self, q, dq):
         """
@@ -195,7 +197,7 @@ class ProjectionNode(RMPNode):
     """
 
     def __init__(self, name, parent, param_map):
-        self.param_map = param_map
+        # self.param_map = param_map
         one_map = param_map.astype("int32")
         mat = np.zeros((np.sum(one_map), one_map.size), dtype="float64")
 
@@ -205,7 +207,7 @@ class ProjectionNode(RMPNode):
                 mat[i_mat][i] = 1
                 i_mat += 1
 
-        self.mat = mat
+        # self.mat = mat
 
         psi = lambda y: np.dot(mat, y)
         J = lambda x: mat
@@ -213,22 +215,38 @@ class ProjectionNode(RMPNode):
         super().__init__(name, parent, psi, J, J_dot)
 
 
-class PositionProjection(ProjectionNode):
+class PositionProjection(RMPNode):
     """
     Convenience method to pass position from RBDRMPNode state
     """
 
     def __init__(self, name, parent):
-        super().__init__(name, parent, np.array([1, 1, 1, 0, 0, 0]))
+        # super().__init__(name, parent, np.array([1, 1, 1, 0, 0, 0, 0]))
+        sel_dx_from_x_dot = np.eye(3, 6)
+
+        psi = lambda y: y[:3]
+        J = lambda x: sel_dx_from_x_dot
+        J_dot = lambda x, xd: np.zeros_like(sel_dx_from_x_dot)
+        super().__init__(name, parent, psi, J, J_dot)
+
+    def pushforward(self):
+        assert self.parent.x.size == 7 and self.parent.x_dot.size == 6, "Parent is not pushing a cartesian output value"
+        super().pushforward()
 
 
-class RotationProjection(ProjectionNode):
+class RotationProjection(RMPNode):
     """
     Convenience method to pass rotation (Euler ZYX in radians) from RBDRMPNode state
     """
 
     def __init__(self, name, parent):
-        super().__init__(name, parent, np.array([0, 0, 0, 1, 1, 1]))
+        # super().__init__(name, parent, np.array([0, 0, 0, 1, 1, 1, 1]))
+        sel_w_from_x_dot = np.eye(3, 6, 3)
+
+        psi = lambda y: y[3:]
+        J = lambda x: sel_w_from_x_dot
+        J_dot = lambda x, xd: np.zeros_like(sel_w_from_x_dot)
+        super().__init__(name, parent, psi, J, J_dot)
 
 
 class FrameProjection(ProjectionNode):
@@ -237,7 +255,7 @@ class FrameProjection(ProjectionNode):
     """
 
     def __init__(self, name, parent):
-        super().__init__(name, parent, np.array([1, 1, 1, 1, 1, 1]))
+        super().__init__(name, parent, np.array([1, 1, 1, 1, 1, 1, 1]))
 
 
 # def rotation_mat_to_euler(rotation):

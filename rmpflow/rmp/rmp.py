@@ -8,7 +8,7 @@ class RMPNode:
     A generic rmp node
     """
 
-    def __init__(self, name, parent, psi, J, J_dot, verbose=True):
+    def __init__(self, name, parent, psi, J, J_dot, verbose=False):
         self.name = name
         self.parent = parent
         self.children = []
@@ -45,8 +45,8 @@ class RMPNode:
         """ "
         Apply a pushforward operation recursively where (x,dx) -> (y_i, dy_i) = (psi(x), J(x)*dx)
         """
-        if self.verbose:
-            print("{}: pushforward".format(self.name))
+        # if self.verbose:
+        print("{}: pushforward".format(self.name))
 
         if self.psi is not None and self.J is not None:
             self.x = self.psi(self.parent.x)
@@ -54,8 +54,8 @@ class RMPNode:
         else:
             print("psi and J are None")
 
-        if self.verbose:
-            print("{}: x = {}, dx = {}".format(self.name, self.x, self.x_dot))
+        # if self.verbose:
+        print("{}: x = {}, dx = {}".format(self.name, self.x, self.x_dot))
 
         # recursion
         [child.pushforward() for child in self.children]
@@ -81,7 +81,6 @@ class RMPNode:
             M_i = child.M
 
             if child.f is not None and child.M is not None:
-                print("{} == {}".format(f_i, J_dot_i))
                 f += np.dot(
                     J_i.T, (f_i - np.dot(np.dot(M_i, J_dot_i), self.x_dot))
                 )  # 1-form
@@ -92,8 +91,6 @@ class RMPNode:
         self.f = f
         self.M = M
 
-        print("{} - {}".format(self.name, self.f))
-
 
 class RMPRoot(RMPNode):
     """
@@ -101,7 +98,9 @@ class RMPRoot(RMPNode):
     """
 
     def __init__(self, name):
-        # print("RMPRoot")
+        self.mass_matrix = None
+        self.nonlinear_effects = None
+
         super().__init__(name, None, None, None, None)
 
     def set_root_state(self, x, x_dot):
@@ -128,8 +127,15 @@ class RMPRoot(RMPNode):
         if self.verbose:
             print("{}: resolve".format(self.name))
 
-        self.a = np.dot(np.linalg.pinv(self.M), self.f)
-        return self.a
+        _, s, _ = np.linalg.svd(self.M, hermitian=True)
+
+        if np.min(s) < 1e-8:
+            self.mass_matrix, _, self.nonlinear_effects = (
+                self.children[-1].children[-1].update_dynamics()
+            )
+            self.M = self.mass_matrix
+
+        self.a = np.dot(np.linalg.pinv(self.M, hermitian=True), self.f)
 
     def solve(self, x, x_dot):
         """
@@ -138,7 +144,9 @@ class RMPRoot(RMPNode):
         self.set_root_state(x, x_dot)
         self.pushforward()
         self.pullback()
-        return self.resolve()
+        self.resolve()
+
+        return self.a, self.mass_matrix, self.nonlinear_effects
 
 
 class RMPLeaf(RMPNode):
@@ -157,8 +165,6 @@ class RMPLeaf(RMPNode):
         """
         self.f, self.M = self.RMP_func(self.x, self.x_dot)
 
-        print("(f, M) = ({}, {})".format(self.f, self.M))
-
     def pullback(self):
         """
         Pullback at leaf node is just evaluating the RMP
@@ -169,6 +175,9 @@ class RMPLeaf(RMPNode):
         self.eval_leaf()
 
     def add_child(self):
+        """
+        Adding a child
+        """
         print("A leaf node should not be able to add a child node")
         pass
 

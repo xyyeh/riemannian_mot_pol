@@ -6,9 +6,9 @@ from scipy.spatial.transform import Rotation as Rot
 # from jax import grad, jit, vmap, jacfwd
 # import jax.numpy as jnp
 
-class GoalAttractorUni(RMPLeaf):
+class PosAttractorUni(RMPLeaf):
     """
-    Goal attractor RMP leaf
+    Goal position attractor RMP leaf
     """
 
     def __init__(
@@ -21,7 +21,7 @@ class GoalAttractorUni(RMPLeaf):
         sigma_gamma=1,
         alpha=1,
         eta=2,
-        gain=1,
+        gain=10,
         tol=0.005,
     ):
         N = y_g.size
@@ -61,8 +61,6 @@ class GoalAttractorUni(RMPLeaf):
             M = G
             f = - grad_Phi - Bx_dot - xi
 
-            f = np.zeros_like(f)
-
             return (f, M)  # Natural form
 
         super().__init__(name, parent, None, psi, J, J_dot, RMP_func)
@@ -79,7 +77,77 @@ class GoalAttractorUni(RMPLeaf):
         self.J = lambda y: np.eye(N)
         self.J_dot = lambda y, y_dot: np.zeros((N, N))
 
+class RotAttractorUni(RMPLeaf):
+    """
+    Goal rotation attractor RMP leaf
+    """
 
+    def __init__(
+        self,
+        name,
+        parent,
+        y_g,
+        w_u=10,
+        w_l=1,
+        sigma_gamma=1,
+        alpha=1,
+        eta=2,
+        gain=10,
+        tol=0.005,
+    ):
+        N = y_g.size
+        psi = lambda y: (y - y_g)
+        J = lambda y: np.eye(N)
+        J_dot = lambda y, y_dot: np.zeros((N, N))
+
+        def RMP_func(x, x_dot):
+            # x and x_dot refers to the error and error_dot
+            x_norm = norm(x)
+
+            # -ve gradient of eta-scaled softmax potential function (25)
+            s = (1 - np.exp(-2 * alpha * x_norm)) / (1 + np.exp(-2 * alpha * x_norm))
+
+            # functions in Appendix D's "Metric options"
+            gamma = np.exp(-(x_norm ** 2) / 2 / (sigma_gamma ** 2))
+            w = (w_u - w_l) * gamma + w_l
+
+            # metric options (27)
+            G = np.eye(N) * w
+            if x_norm > tol:
+                grad_Phi = s / x_norm * w * x * gain
+            else:
+                grad_Phi = 0
+            Bx_dot = eta * w * x_dot
+            grad_w = -gamma * (w_u - w_l) / sigma_gamma ** 2 * x
+
+            # since gradient is simple, xi is hand-computed
+            # M_stretch is a bit more complicated, we'll need to use a differentiation library like AutoGrad
+            x_dot_norm = norm(x_dot)
+            xi = -0.5 * (
+                x_dot_norm ** 2 * grad_w
+                - 2 * np.dot(np.dot(x_dot, x_dot.transpose()), grad_w)
+            )
+
+            # Use G(x, dx) = M(x), since there is no dependence on velocity, so \Xi = 0
+            M = G
+            f = - grad_Phi - Bx_dot - xi
+            
+            return (f, M)  # Natural form
+
+        super().__init__(name, parent, None, psi, J, J_dot, RMP_func)
+
+    def update_goal(self, y_g):
+        """
+        Updates the position of the goal
+        """
+        if y_g.ndim == 1:
+            y_g = y_g.reshape(-1, 1)
+
+        N = y_g.size
+        self.psi = lambda y: (y - y_g)
+        self.J = lambda y: np.eye(N)
+        self.J_dot = lambda y, y_dot: np.zeros((N, N))
+        
 class Damper(RMPLeaf):
     """
     Damper
