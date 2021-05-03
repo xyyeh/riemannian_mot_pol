@@ -78,10 +78,7 @@ class PosAttractorUni(RMPLeaf):
         if x_g.ndim == 1:
             x_g = x_g.reshape(-1, 1)
 
-        N = x_g.size
-        self.psi = lambda y: (y - x_g)
-        self.J = lambda y: np.eye(N)
-        self.J_dot = lambda y, y_dot: np.zeros((N, N))
+        self.x_g = x_g
 
     def pushforward(self):
         """
@@ -117,10 +114,15 @@ class RotAttractorUni(RMPLeaf):
         gain=10,
         tol=0.005,
     ):
-        N = x_g.size
-        psi = lambda y: (y - x_g)
-        J = lambda y: np.eye(N)
-        J_dot = lambda y, y_dot: np.zeros((N, N))
+        self.x_g = x_g
+        self.x_dot_g = np.zeros_like(x_g)
+
+        N = self.x_g.size
+
+        # functions for RMP algebra by parent
+        psi = lambda z: np.eye(N)
+        J = lambda z: np.eye(N)
+        J_dot = lambda z, z_dot: np.zeros((N, N))
 
         def RMP_func(x, x_dot):
             # x and x_dot refers to the error and error_dot
@@ -165,10 +167,24 @@ class RotAttractorUni(RMPLeaf):
         if x_g.ndim == 1:
             x_g = x_g.reshape(-1, 1)
 
-        N = x_g.size
-        self.psi = lambda y: (y - x_g)
-        self.J = lambda y: np.eye(N)
-        self.J_dot = lambda y, y_dot: np.zeros((N, N))
+        self.x_g = x_g
+
+    def pushforward(self):
+        """
+        Apply a pushforward operation recursively where (x,dx) -> (y_i, dy_i) = (psi(x), J(x)*dx)
+        """
+        if self.verbose:
+            print("{}: pushforward (leaf)".format(self.name))
+
+        # get the corresponding columns
+
+        self.x = self.parent.x - self.x_g
+        self.x_dot = self.parent.x_dot - self.x_dot_g
+
+        if self.verbose:
+            print("{}: x = {}, dx = {}".format(self.name, self.x, self.x_dot))
+
+        # no further recursion
 
 
 class Damper(RMPLeaf):

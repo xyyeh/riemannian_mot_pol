@@ -95,7 +95,7 @@ class RBDRMPNode(RMPNode):
             p = sv.translation()
             ofs = r.as_matrix().dot(offset.reshape(3, 1)).flatten()
             # eul = r.as_euler("zyx", degrees=False)  # as rz, ry and rx angles in order
-            quat = r.as_quat()
+            quat = r.as_quat() # x, y, z, w
             return np.array(
                 [
                     p.x() + ofs[0],
