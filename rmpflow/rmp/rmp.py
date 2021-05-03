@@ -98,7 +98,7 @@ class RMPNode:
         self.f = f
         self.M = M
 
-        print("x = {}, dx = {}".format(self.x, self.x_dot))
+        # print("x = {}, dx = {}".format(self.x, self.x_dot))
 
 
 class RMPRoot(RMPNode):
@@ -185,7 +185,7 @@ class RMPLeaf(RMPNode):
         # find the policy [f, M]
         self.eval_leaf()
 
-        print("x = {}, dx = {}".format(self.x, self.x_dot))
+        # print("x = {}, dx = {}".format(self.x, self.x_dot))
 
     def pushforward(self):
         assert False, "Pushforward in the parent RMPLeaf class needs to be overridden"
