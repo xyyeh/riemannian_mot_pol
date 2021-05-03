@@ -9,6 +9,7 @@ class RMPNode:
     """
 
     def __init__(self, name, parent, psi, J, J_dot, verbose=False):
+        self.inv_tol = 1e-8
         self.name = name
         self.parent = parent
         self.children = []
@@ -138,7 +139,7 @@ class RMPRoot(RMPNode):
 
         _, s, _ = np.linalg.svd(self.M, hermitian=True)
 
-        if np.min(s) < 1e-8:
+        if np.min(s) < self.inv_tol:
             self.mass_matrix, _, self.nonlinear_effects = (
                 self.children[-1].children[-1].update_dynamics()
             )
