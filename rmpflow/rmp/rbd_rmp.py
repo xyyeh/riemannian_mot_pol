@@ -197,7 +197,6 @@ class ProjectionNode(RMPNode):
     """
 
     def __init__(self, name, parent, param_map):
-        # self.param_map = param_map
         one_map = param_map.astype("int32")
         mat = np.zeros((np.sum(one_map), one_map.size), dtype="float64")
 
@@ -207,8 +206,6 @@ class ProjectionNode(RMPNode):
                 mat[i_mat][i] = 1
                 i_mat += 1
 
-        # self.mat = mat
-
         psi = lambda y: np.dot(mat, y)
         J = lambda x: mat
         J_dot = lambda x, xd: np.zeros_like(mat)
@@ -217,11 +214,10 @@ class ProjectionNode(RMPNode):
 
 class PositionProjection(RMPNode):
     """
-    Convenience method to pass position from RBDRMPNode state
+    Convenience method to pass position from RBDRMPNode state through pushforward
     """
 
     def __init__(self, name, parent):
-        # super().__init__(name, parent, np.array([1, 1, 1, 0, 0, 0, 0]))
         sel_dx_from_x_dot = np.eye(3, 6)
 
         psi = lambda y: y[:3]
@@ -236,11 +232,10 @@ class PositionProjection(RMPNode):
 
 class RotationProjection(RMPNode):
     """
-    Convenience method to pass rotation (Euler ZYX in radians) from RBDRMPNode state
+    Convenience method to pass rotation (Euler ZYX in radians) from RBDRMPNode state through pushforward
     """
 
     def __init__(self, name, parent):
-        # super().__init__(name, parent, np.array([0, 0, 0, 1, 1, 1, 1]))
         sel_w_from_x_dot = np.eye(3, 6, 3)
 
         psi = lambda y: y[3:]

@@ -45,8 +45,8 @@ class RMPNode:
         """ "
         Apply a pushforward operation recursively where (x,dx) -> (y_i, dy_i) = (psi(x), J(x)*dx)
         """
-        # if self.verbose:
-        print("{}: pushforward".format(self.name))
+        if self.verbose:
+            print("{}: pushforward".format(self.name))
 
         if self.psi is not None and self.J is not None:
             self.x = self.psi(self.parent.x)
@@ -54,8 +54,8 @@ class RMPNode:
         else:
             print("psi and J are None")
 
-        # if self.verbose:
-        print("{}: x = {}, dx = {}".format(self.name, self.x, self.x_dot))
+        if self.verbose:
+            print("{}: x = {}, dx = {}".format(self.name, self.x, self.x_dot))
 
         # recursion
         [child.pushforward() for child in self.children]
@@ -71,8 +71,14 @@ class RMPNode:
             print("{}: pullback".format(self.name))
 
         # aggregate results
-        f = np.zeros_like(self.x, dtype="float64")
-        M = np.zeros((self.x.shape[0], self.x.shape[0]), dtype="float64")
+        if self.x.shape[0] == 7 and self.x_dot.shape[0] == 6: # cartesian values
+            f = np.zeros(6)
+            M = np.zeros((6,6), dtype="float64")
+        else: # R^n values
+            f = np.zeros_like(self.x, dtype="float64")
+            M = np.zeros((self.x.shape[0], self.x.shape[0]), dtype="float64")
+
+        # aggregate results
         for child in self.children:
             J_i = child.J(self.x)
             J_dot_i = child.J_dot(self.x, self.x_dot)
@@ -88,8 +94,11 @@ class RMPNode:
             else:
                 print("{} does not contribute".format(child.name))
 
+        # find the policy [f, M]
         self.f = f
         self.M = M
+
+        print("x = {}, dx = {}".format(self.x, self.x_dot))
 
 
 class RMPRoot(RMPNode):
@@ -163,8 +172,9 @@ class RMPLeaf(RMPNode):
         """
         Compute natural form RMP given the state
         """
+        
         self.f, self.M = self.RMP_func(self.x, self.x_dot)
-
+        
     def pullback(self):
         """
         Pullback at leaf node is just evaluating the RMP
@@ -172,14 +182,16 @@ class RMPLeaf(RMPNode):
         if self.verbose:
             print("{}: pullback (leaf)".format(self.name))
 
+        # find the policy [f, M]
         self.eval_leaf()
 
+        print("x = {}, dx = {}".format(self.x, self.x_dot))
+
+    def pushforward(self):
+        assert False, "Pushforward in the parent RMPLeaf class needs to be overridden"
+
     def add_child(self):
-        """
-        Adding a child
-        """
-        print("A leaf node should not be able to add a child node")
-        pass
+        assert False, "A leaf node should not be able to add a child node"
 
     def update_params(self):
         """
