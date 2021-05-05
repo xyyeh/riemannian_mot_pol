@@ -124,6 +124,17 @@ class RotAttractorUni(RMPLeaf):
         J = lambda z: np.eye(N)
         J_dot = lambda z, z_dot: np.zeros((N, N))
 
+        def quat_error(q_cur, q_des):
+            """
+            Computes the quaternion feedback error with the definition (x-x_des)
+            """
+            r_cur = R.from_quat(q_cur)
+            r_des = R.from_quat(q_des)
+            r_des_cur = r_des * r_cur.inv()
+            q_des_cur = r_des_cur.as_quat()
+            
+            return -2 * q_des_cur[3] * q_des_cur[:-1]
+
         def RMP_func(x, x_dot):
             # x and x_dot refers to the error and error_dot
             x_norm = norm(x)

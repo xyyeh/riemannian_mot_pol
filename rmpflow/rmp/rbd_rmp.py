@@ -95,7 +95,7 @@ class RBDRMPNode(RMPNode):
             p = sv.translation()
             ofs = r.as_matrix().dot(offset.reshape(3, 1)).flatten()
             # eul = r.as_euler("zyx", degrees=False)  # as rz, ry and rx angles in order
-            quat = r.as_quat() # x, y, z, w
+            quat = r.as_quat()  # x, y, z, w
             return np.array(
                 [
                     p.x() + ofs[0],
@@ -226,7 +226,9 @@ class PositionProjection(RMPNode):
         super().__init__(name, parent, psi, J, J_dot)
 
     def pushforward(self):
-        assert self.parent.x.size == 7 and self.parent.x_dot.size == 6, "Parent is not pushing a cartesian output value"
+        assert (
+            self.parent.x.size == 7 and self.parent.x_dot.size == 6
+        ), "Parent is not pushing a cartesian output value"
         super().pushforward()
 
 
@@ -243,34 +245,11 @@ class RotationProjection(RMPNode):
         J_dot = lambda x, xd: np.zeros_like(sel_w_from_x_dot)
         super().__init__(name, parent, psi, J, J_dot)
 
-
-class FrameProjection(ProjectionNode):
-    """
-    Convenience method to pass rotation and orientation from RBDRMPNode state
-    """
-
-    def __init__(self, name, parent):
-        super().__init__(name, parent, np.array([1, 1, 1, 1, 1, 1, 1]))
-
-
-# def rotation_mat_to_euler(rotation):
-#     """
-#     Converts rotation matrix to euler zyx
-#     @param rotation     Rotation matrix
-#     """
-#     sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-#     singular = sy < 1e-6
-
-#     if not singular:
-#         x = math.atan2(R[2, 1], R[2, 2])
-#         y = math.atan2(-R[2, 0], sy)
-#         z = math.atan2(R[1, 0], R[0, 0])
-#     else:
-#         x = math.atan2(-R[1, 2], R[1, 1])
-#         y = math.atan2(-R[2, 0], sy)
-#         z = 0
-
-#     return x, y, z
+    def pushforward(self):
+        assert (
+            self.parent.x.size == 7 and self.parent.x_dot.size == 6
+        ), "Parent is not pushing a cartesian output value"
+        super().pushforward()
 
 
 def rmp_tree_print(node, prefix="", last=True):
