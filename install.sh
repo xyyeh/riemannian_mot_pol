@@ -1,5 +1,5 @@
 echo "Installing pytorch"
-conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+# conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 
 echo "Installing Tinyxml2"
 pushd ./
@@ -22,6 +22,7 @@ echo "Installing Eigen3ToPython"
 pushd ./
 git clone https://github.com/jrl-umi3218/Eigen3ToPython.git
 cd Eigen3ToPython
+git checkout 1.0.2
 pip install -r requirements.txt
 mkdir -p build
 cd build
@@ -37,7 +38,7 @@ echo "Installing SpaceVecAlg"
 pushd ./
 git clone --recursive https://github.com/jrl-umi3218/SpaceVecAlg
 cd SpaceVecAlg
-git checkout v1.1.0
+git checkout v1.2.0
 mkdir -p build
 cd build
 cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DCMAKE_INSTALL_PREFIX=../../temp_install
@@ -52,7 +53,7 @@ echo "Installing RBDyn"
 pushd ./
 git clone --recursive https://github.com/jrl-umi3218/RBDyn
 cd RBDyn
-git checkout v1.4.0
+git checkout v1.5.0
 mkdir -p build
 cd build
 cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DCMAKE_INSTALL_PREFIX=../../temp_install
