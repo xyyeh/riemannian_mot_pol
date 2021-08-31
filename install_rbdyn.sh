@@ -8,7 +8,7 @@ cd tinyxml2
 git checkout 8.0.0
 mkdir -p build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=../../temp_install
+cmake .. -DCMAKE_INSTALL_PREFIX=~/anaconda3/envs/rmp/
 make -j
 make install
 popd
@@ -26,7 +26,7 @@ git checkout 1.0.2
 pip install -r requirements.txt
 mkdir -p build
 cd build
-cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DCMAKE_INSTALL_PREFIX=../../temp_install
+cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DCMAKE_INSTALL_PREFIX=~/anaconda3/envs/rmp/
 make -j
 make install
 cd python3
@@ -41,7 +41,7 @@ cd SpaceVecAlg
 git checkout v1.1.0
 mkdir -p build
 cd build
-cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=../../temp_install
+cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=~/anaconda3/envs/rmp/
 make -j
 make install
 cd binding/python/sva/python3
@@ -56,7 +56,7 @@ cd RBDyn
 git checkout v1.3.0
 mkdir -p build
 cd build
-cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=../../temp_install
+cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=~/anaconda3/envs/rmp/
 make -j
 make install
 cd binding/python/rbdyn/python3
