@@ -38,10 +38,10 @@ echo "Installing SpaceVecAlg"
 pushd ./
 git clone --recursive https://github.com/jrl-umi3218/SpaceVecAlg
 cd SpaceVecAlg
-git checkout v1.2.0
+git checkout v1.1.0
 mkdir -p build
 cd build
-cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DCMAKE_INSTALL_PREFIX=../../temp_install
+cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=../../temp_install
 make -j
 make install
 cd binding/python/sva/python3
@@ -53,10 +53,10 @@ echo "Installing RBDyn"
 pushd ./
 git clone --recursive https://github.com/jrl-umi3218/RBDyn
 cd RBDyn
-git checkout v1.5.0
+git checkout v1.3.0
 mkdir -p build
 cd build
-cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DCMAKE_INSTALL_PREFIX=../../temp_install
+cmake .. -DPYTHON_BINDING_FORCE_PYTHON3=ON -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=../../temp_install
 make -j
 make install
 cd binding/python/rbdyn/python3
